@@ -2,14 +2,14 @@
 	"i18n": true,
 	"type": "panel",
 	"items": {
-		"option1": {
-			"type": "checkbox",
-			"label": "option1",
+		"user": {
+			"type": "text",
+			"label": "user",
 			"newLine": true
 		},
-		"option2": {
+		"password": {
 			"type": "text",
-			"label": "option2",
+			"label": "password",
 			"newLine": true
 		}
 	}
