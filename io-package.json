@@ -1,0 +1,88 @@
+{
+	"common": {
+		"name": "absaar-cloud-acess",
+		"version": "0.0.1",
+		"news": {
+			"0.0.1": {
+				"en": "initial release",
+				"de": "Erstveröffentlichung",
+				"ru": "Начальная версия",
+				"pt": "lançamento inicial",
+				"nl": "Eerste uitgave",
+				"fr": "Première version",
+				"it": "Versione iniziale",
+				"es": "Versión inicial",
+				"pl": "Pierwsze wydanie",
+				"uk": "Початкова версія",
+				"zh-cn": "首次出版"
+			}
+		},
+		"titleLang": {
+			"en": "Absaar",
+			"de": "Absaar",
+			"ru": "Absaar",
+			"pt": "Absaar",
+			"nl": "Absaar",
+			"fr": "Absaar",
+			"it": "Absaar",
+			"es": "Absaar",
+			"pl": "Absaar",
+			"uk": "Absaar",
+			"zh-cn": "Absaar"
+		},
+		"desc": {
+			"en": "Absaar cloud acess",
+			"de": "Absaar cloud acess",
+			"ru": "Absaar cloud acess",
+			"pt": "Absaar cloud acess",
+			"nl": "Absaar cloud acess",
+			"fr": "Absaar cloud acess",
+			"it": "Absaar cloud acess",
+			"es": "Absaar cloud acess",
+			"pl": "Absaar cloud acess",
+			"uk": "Absaar cloud acess",
+			"zh-cn": "Absaar cloud acess"
+		},
+		"authors": [
+			"brendergast <brendergast@googlemail.com>"
+		],
+		"keywords": [
+			"Absaar cloud acess"
+		],
+		"licenseInformation": {
+			"type": "free",
+			"license": "MIT"
+		},
+		"platform": "Javascript/Node.js",
+		"icon": "absaar-cloud-acess.png",
+		"enabled": true,
+		"extIcon": "https://raw.githubusercontent.com/brendergast/ioBroker.absaar-cloud-acess/main/admin/absaar-cloud-acess.png",
+		"readme": "https://github.com/brendergast/ioBroker.absaar-cloud-acess/blob/main/README.md",
+		"loglevel": "info",
+		"tier": 3,
+		"mode": "daemon",
+		"type": "energy",
+		"compact": true,
+		"connectionType": "cloud",
+		"dataSource": "poll",
+		"adminUI": {
+			"config": "json"
+		},
+		"dependencies": [
+			{
+				"js-controller": ">=6.0.11"
+			}
+		],
+		"globalDependencies": [
+			{
+				"admin": "7.0.23"
+			}
+		]
+	},
+	"native": {
+		"option1": true,
+		"option2": "42"
+	},
+	"objects": [],
+	"instanceObjects": []
+}

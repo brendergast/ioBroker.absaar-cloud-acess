@@ -1,0 +1,47 @@
+{
+	"expert": "no",
+	"cli": false,
+	"adapterName": "absaar-cloud-acess",
+	"title": "Absaar",
+	"description": "Absaar cloud acess",
+	"keywords": [
+		"Absaar cloud acess"
+	],
+	"contributors": "",
+	"features": [
+		"adapter"
+	],
+	"adminFeatures": [],
+	"type": "energy",
+	"startMode": "daemon",
+	"connectionType": "cloud",
+	"dataSource": "poll",
+	"connectionIndicator": "no",
+	"adapterSettings": [
+		{
+			"key": "option1",
+			"defaultValue": true,
+			"inputType": "checkbox"
+		},
+		{
+			"key": "option2",
+			"defaultValue": "42",
+			"inputType": "text"
+		}
+	],
+	"language": "JavaScript",
+	"adminUi": "json",
+	"releaseScript": "yes",
+	"indentation": "Tab",
+	"quotes": "double",
+	"tools": [
+		"ESLint",
+		"type checking"
+	],
+	"authorName": "brendergast",
+	"authorGithub": "brendergast",
+	"authorEmail": "brendergast@googlemail.com",
+	"license": "MIT License",
+	"target": "github",
+	"creatorVersion": "2.6.5"
+}
