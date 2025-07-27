@@ -10,7 +10,7 @@ const utils = require("@iobroker/adapter-core");
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
-
+const axios = require('axios');
 const BASE_URL = "https://mini-ems.com:8081";
 const SCAN_INTERVAL = DateTime.local().plus({ minutes: 2 }).toJSDate();
 
