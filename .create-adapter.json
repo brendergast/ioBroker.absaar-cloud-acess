@@ -19,12 +19,12 @@
 	"connectionIndicator": "no",
 	"adapterSettings": [
 		{
-			"key": "option1",
+			"key": "user",
 			"defaultValue": true,
-			"inputType": "checkbox"
+			"inputType": "text"
 		},
 		{
-			"key": "option2",
+			"key": "password",
 			"defaultValue": "42",
 			"inputType": "text"
 		}
