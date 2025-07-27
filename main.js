@@ -7,12 +7,16 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require("@iobroker/adapter-core");
+let adapter;
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
 const axios = require('axios');
 const BASE_URL = "https://mini-ems.com:8081";
 const SCAN_INTERVAL = DateTime.local().plus({ minutes: 2 }).toJSDate();
+
+BASE_URL = "https://mini-ems.com:8081"
+SCAN_INTERVAL = timedelta(minutes=2)
 
 const PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     [CONF_USERNAME]: cv.string,
