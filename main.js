@@ -11,17 +11,15 @@ let adapter;
 
 // Load your modules here, e.g.:
 // const fs = require("fs");
-const axios = require('axios');
-const { setTimeout } = require('timers/promises'); // Using timers for delay
+const axios = require("axios");
+const { string } = require('voluptuous'); 
 const BASE_URL = "https://mini-ems.com:8081";
-const SCAN_INTERVAL = DateTime.local().plus({ minutes: 2 }).toJSDate();
+const SCAN_INTERVAL = 2 * 60 * 1000; // in milliseconds
 
-BASE_URL = "https://mini-ems.com:8081"
-SCAN_INTERVAL = timedelta(minutes=2)
 
 const PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    [CONF_USERNAME]: cv.string,
-    [CONF_PASSWORD]: cv.string,
+    [CONF_USERNAME]: string().required(),
+    [CONF_PASSWORD]: string().required(),
 	});
 
 const agent = new https.Agent({  
@@ -36,7 +34,7 @@ class AbsaarCloudAcess extends utils.Adapter {
 	constructor(options) {
 		super({
 			...options,
-			name: "absaar-cloud-acess",
+			name: "absaar-cloud-access",
 		});
 		this.on("ready", this.onReady.bind(this));
 		this.on("stateChange", this.onStateChange.bind(this));
@@ -60,11 +58,11 @@ class AbsaarCloudAcess extends utils.Adapter {
         	if (response.status === 200 && data.token) {
             		return { token: data.token, userId: data.userId };
         	} else {
-            		_LOGGER.error("Login failed: %s", data);
+            		console.log("Login failed: %s", data);
             		return null;
         	}
     	} catch (error) {
-        	_LOGGER.error("Error during login: %s", error);
+        	console.log("Error during login: %s", error);
         	return null;
     }
 	async function getStations(userId, token) {
@@ -76,7 +74,7 @@ class AbsaarCloudAcess extends utils.Adapter {
         const response = await axios.post(url, payload, { headers, httpsAgent: agent });
         return response.data;
     } catch (error) {
-        _LOGGER.error("Error fetching stations: %s", error);
+        console.log("Error fetching stations: %s", error);
         return null;
     }
 }
@@ -90,7 +88,7 @@ async function getCollectors(powerId, token) {
         const response = await axios.post(url, payload, { headers, httpsAgent: agent });
         return response.data;
     } catch (error) {
-        _LOGGER.error("Error fetching collectors: %s", error);
+        console.log("Error fetching collectors: %s", error);
         return null;
     }
 }
@@ -104,7 +102,7 @@ async function getInverterData(powerId, inverterId, token) {
         const response = await axios.post(url, payload, { headers, httpsAgent: agent });
         return response.data;
     } catch (error) {
-        _LOGGER.error("Error fetching inverter data: %s", error);
+        console.log("Error fetching inverter data: %s", error);
         return null;
     }
 }
@@ -117,14 +115,14 @@ async function setupPlatform(hass, config, addEntities, discoveryInfo = null) {
 
     const { token, userId: id } = await login(username, password);
     if (!token) {
-        _LOGGER.error("Authentication failed");
+        console.log("Authentication failed");
         return;
     }
 
     userId = id;
     const stations = await getStations(userId, token);
     if (!stations || !stations.rows) {
-        _LOGGER.error("No stations found");
+        console.log("No stations found");
         return;
     }
 
@@ -139,7 +137,7 @@ async function setupPlatform(hass, config, addEntities, discoveryInfo = null) {
 
         const collectors = await getCollectors(powerId, token);
         if (!collectors || !collectors.rows) {
-            _LOGGER.warning("No collectors found for station %s", station.powerName);
+            console.warn("No collectors found for station %s", station.powerName);
             continue;
         }
 
@@ -147,7 +145,7 @@ async function setupPlatform(hass, config, addEntities, discoveryInfo = null) {
             const inverterId = collector.inverterId;
             const inverterData = await getInverterData(powerId, inverterId, token);
             if (!inverterData || !inverterData.rows || !inverterData.rows.length) {
-                _LOGGER.warning("No inverter data found for %s", collector.collectorName);
+                console.warn("No inverter data found for %s", collector.collectorName);
                 continue;
             }
 
@@ -204,7 +202,7 @@ class AbsaarInverterSensor extends SensorEntity {
         const data = await getInverterData(this._powerId, this._inverterId, this._token);
 
         if (!data || !data.rows || !data.rows.length) {
-            _LOGGER.warning("No inverter data received for ID %s", this._inverterId);
+            console.warn("No inverter data received for ID %s", this._inverterId);
             this._attr_native_value = "No Data";
             return;
         }
@@ -231,7 +229,7 @@ class AbsaarStationSensor extends SensorEntity {
         const data = await getStations(userId, this._token);
 
         if (!data || !data.rows || !data.rows.length) {
-            _LOGGER.warning("No station data received for ID %s", this._powerId);
+            console.warn("No station data received for ID %s", this._powerId);
             this._attr_native_value = "No Data";
             return;
         }
@@ -249,8 +247,8 @@ class AbsaarStationSensor extends SensorEntity {
 
 		// The adapters config (in the instance object everything under the attribute "native") is accessible via
 		// this.config:
-		this.log.info("config option1: " + this.config.option1);
-		this.log.info("config option2: " + this.config.option2);
+		this.log.info("config user: " + this.config.user);
+		this.log.info("config password: " + this.config.password);
 
 		/*
 		For every state in the system there has to be also an object of type state
