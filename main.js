@@ -13,8 +13,14 @@ let adapter;
 // const fs = require("fs");
 const axios = require("axios");
 const { string } = require('voluptuous'); 
+const { PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass, SensorStateClass } = require('@iobroker/adapter-core');
+
 const BASE_URL = "https://mini-ems.com:8081";
 const SCAN_INTERVAL = 2 * 60 * 1000; // in milliseconds
+
+
+var CONF_USERNAME = string().required();
+var CONF_PASSWORD = string().required();
 
 
 const PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -22,29 +28,12 @@ const PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     [CONF_PASSWORD]: string().required(),
 	});
 
-const agent = new https.Agent({  
+const agent = new axios.Agent({  
     rejectUnauthorized: false
 });
 
-class AbsaarCloudAcess extends utils.Adapter {
 
-	/**
-	 * @param {Partial<utils.AdapterOptions>} [options={}]
-	 */
-	constructor(options) {
-		super({
-			...options,
-			name: "absaar-cloud-access",
-		});
-		this.on("ready", this.onReady.bind(this));
-		this.on("stateChange", this.onStateChange.bind(this));
-		// this.on("objectChange", this.onObjectChange.bind(this));
-		// this.on("message", this.onMessage.bind(this));
-		this.on("unload", this.onUnload.bind(this));
-	}
-
-
-	async function login(username, password) {
+async function login(username, password) {
  		const url = `${BASE_URL}/dn/userLogin`;
 		const headers = {
         		"User-Agent": "okhttp-okgo/jeasonlzy",
@@ -238,6 +227,23 @@ class AbsaarStationSensor extends SensorEntity {
         this._attr_native_value = station.dailyPowerGeneration || 0.0;
     }
 }
+
+class AbsaarCloudAcess extends utils.Adapter {
+
+	/**
+	 * @param {Partial<utils.AdapterOptions>} [options={}]
+	 */
+	constructor(options) {
+		super({
+			...options,
+			name: "absaar-cloud-access",
+		});
+		this.on("ready", this.onReady.bind(this));
+		this.on("stateChange", this.onStateChange.bind(this));
+		// this.on("objectChange", this.onObjectChange.bind(this));
+		// this.on("message", this.onMessage.bind(this));
+		this.on("unload", this.onUnload.bind(this));
+	}
 	
 	/**
 	 * Is called when databases are connected and adapter received configuration.
