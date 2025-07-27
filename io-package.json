@@ -80,8 +80,8 @@
 		]
 	},
 	"native": {
-		"option1": true,
-		"option2": "42"
+		"user": "",
+		"password": "",
 	},
 	"objects": [],
 	"instanceObjects": []
