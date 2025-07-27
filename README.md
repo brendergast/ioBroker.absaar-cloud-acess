@@ -1,4 +1,4 @@
-![Logo](admin/absaar-cloud-acess.png)
+![Logo](admin/absaar.png)
 # ioBroker.absaar-cloud-acess
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.absaar-cloud-acess.svg)](https://www.npmjs.com/package/iobroker.absaar-cloud-acess)
