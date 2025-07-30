@@ -1,0 +1,21 @@
+{
+  "type": "config",
+  "elements": [
+    {
+      "name": "username",
+      "label": "Mini EMS Benutzername",
+      "type": "text"
+    },
+    {
+      "name": "password",
+      "label": "Passwort",
+      "type": "password"
+    },
+    {
+      "name": "stationIndex",
+      "label": "Station Index (0 = erste Station)",
+      "type": "number",
+      "default": 0
+    }
+  ]
+}
