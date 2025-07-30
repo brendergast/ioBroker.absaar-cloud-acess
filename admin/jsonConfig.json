@@ -2,15 +2,21 @@
 	"i18n": true,
 	"type": "panel",
 	"items": {
-		"user": {
-			"type": "text",
-			"label": "user",
-			"newLine": true
-		},
-		"password": {
-			"type": "text",
-			"label": "password",
-			"newLine": true
-		}
+    	{
+      		"type": "text",
+      		"name": "username",
+      		"label": "Benutzername"
+    	},
+    	{
+      		"type": "password",
+      		"name": "password",
+      		"label": "Passwort"
+    	},
+    	{
+      		"type": "number",
+      		"name": "stationIndex",
+     		"label": "Station Index",
+      		"default": 0
+    	}
 	}
 }

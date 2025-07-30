@@ -80,9 +80,17 @@
 		]
 	},
 	"native": {
-		"user": "",
-		"password": "",
+  		"username": "",
+  		"password": "",
+  		"stationIndex": 0
 	},
 	"objects": [],
-	"instanceObjects": []
+	"instanceObjects": [
+  	{
+    	"_id": "station",
+    	"type": "channel",
+    	"common": {
+      	"name": "PV Station Data"
+    },
+    "native": {}
 }

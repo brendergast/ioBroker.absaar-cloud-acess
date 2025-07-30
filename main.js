@@ -1,384 +1,173 @@
-"use strict";
+'use strict';
 
-/*
- * Created with @iobroker/create-adapter v2.6.5
- */
+const utils = require('@iobroker/adapter-core');
+const axios = require('axios').default;
+const https = require('https');
 
-// The adapter-core module gives you access to the core ioBroker functions
-// you need to create an adapter
-const utils = require("@iobroker/adapter-core");
-let adapter;
+class MiniEMS extends utils.Adapter {
+    constructor(options = {}) {
+        super({
+            ...options,
+            name: 'mini-ems',
+        });
 
-// Load your modules here, e.g.:
-// const fs = require("fs");
-const axios = require("axios");
-const { string } = require('voluptuous'); 
-const { PLATFORM_SCHEMA, SensorEntity, SensorDeviceClass, SensorStateClass } = require('@iobroker/adapter-core');
-
-const BASE_URL = "https://mini-ems.com:8081";
-const SCAN_INTERVAL = 2 * 60 * 1000; // in milliseconds
-
-
-var CONF_USERNAME = string().required();
-var CONF_PASSWORD = string().required();
-
-
-const PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    [CONF_USERNAME]: string().required(),
-    [CONF_PASSWORD]: string().required(),
-	});
-
-const agent = new axios.Agent({  
-    rejectUnauthorized: false
-});
-
-
-async function login(username, password) {
- 		const url = `${BASE_URL}/dn/userLogin`;
-		const headers = {
-        		"User-Agent": "okhttp-okgo/jeasonlzy",
-        		"Content-Type": "application/json;charset=utf-8",
-    	};
-    	const payload = { username, password };
-
-    	try {
-        	const response = await axios.post(url, payload, { headers, httpsAgent: agent });
-        	const data = response.data;
-        	if (response.status === 200 && data.token) {
-            		return { token: data.token, userId: data.userId };
-        	} else {
-            		console.log("Login failed: %s", data);
-            		return null;
-        	}
-    	} catch (error) {
-        	console.log("Error during login: %s", error);
-        	return null;
-    }
-	async function getStations(userId, token) {
-    const url = `${BASE_URL}/dn/power/station/listApp`;
-    const headers = { "Authorization": token };
-    const payload = { userId: String(userId) };
-
-    try {
-        const response = await axios.post(url, payload, { headers, httpsAgent: agent });
-        return response.data;
-    } catch (error) {
-        console.log("Error fetching stations: %s", error);
-        return null;
-    }
-}
-
-async function getCollectors(powerId, token) {
-    const url = `${BASE_URL}/dn/power/collector/listByApp`;
-    const headers = { "Authorization": token };
-    const payload = { powerId: String(powerId) };
-
-    try {
-        const response = await axios.post(url, payload, { headers, httpsAgent: agent });
-        return response.data;
-    } catch (error) {
-        console.log("Error fetching collectors: %s", error);
-        return null;
-    }
-}
-
-async function getInverterData(powerId, inverterId, token) {
-    const url = `${BASE_URL}/dn/power/inverterData/inverterDatalist`;
-    const headers = { "Authorization": token };
-    const payload = { powerId, inverterId };
-
-    try {
-        const response = await axios.post(url, payload, { headers, httpsAgent: agent });
-        return response.data;
-    } catch (error) {
-        console.log("Error fetching inverter data: %s", error);
-        return null;
-    }
-}
-
-let userId = "";
-
-async function setupPlatform(hass, config, addEntities, discoveryInfo = null) {
-    const username = config[CONF_USERNAME];
-    const password = config[CONF_PASSWORD];
-
-    const { token, userId: id } = await login(username, password);
-    if (!token) {
-        console.log("Authentication failed");
-        return;
+        this.on('ready', this.onReady.bind(this));
+        this.on('unload', this.onUnload.bind(this));
     }
 
-    userId = id;
-    const stations = await getStations(userId, token);
-    if (!stations || !stations.rows) {
-        console.log("No stations found");
-        return;
+    async onReady() {
+        this.log.info('Adapter gestartet');
+
+        this.username = this.config.username;
+        this.password = this.config.password;
+        this.stationIndex = parseInt(this.config.stationIndex) || 0;
+
+        this.httpsAgent = new https.Agent({ rejectUnauthorized: false });
+        this.BASE_URL = 'https://www.mini-ems.com:8081';
+
+        this.updateInterval = 2 * 60 * 1000; // 2 Minuten
+
+        await this.updateData();
+
+        this.interval = setInterval(() => this.updateData(), this.updateInterval);
     }
 
-    const entities = [];
-    for (const station of stations.rows) {
-        const powerId = station.powerId;
-        const dailyPower = station.dailyPowerGeneration;
-        const totalPower = station.totalPowerGeneration;
-        
-        entities.push(new AbsaarStationSensor(`${station.powerName} totalPowerGeneration`, powerId, token, totalPower, "kWh"));
-        entities.push(new AbsaarStationSensor(`${station.powerName} dailyPowerGeneration`, powerId, token, dailyPower, "kWh"));
+    onUnload(callback) {
+        try {
+            if (this.interval) clearInterval(this.interval);
+            callback();
+        } catch (e) {
+            this.log.error('Fehler beim Beenden: ' + e);
+            callback();
+        }
+    }
 
-        const collectors = await getCollectors(powerId, token);
-        if (!collectors || !collectors.rows) {
-            console.warn("No collectors found for station %s", station.powerName);
-            continue;
+    async login() {
+        const url = `${this.BASE_URL}/dn/userLogin`;
+        const headers = {
+            'User-Agent': 'okhttp-okgo/jeasonlzy',
+            'Content-Type': 'application/json;charset=utf-8',
+        };
+
+        try {
+            const resp = await axios.post(url, {
+                username: this.username,
+                password: this.password
+            }, { headers, httpsAgent: this.httpsAgent });
+
+            if (resp.status === 200 && resp.data.token) {
+                return { token: resp.data.token, userId: resp.data.userId };
+            } else {
+                this.log.error('Login fehlgeschlagen: ' + JSON.stringify(resp.data));
+            }
+        } catch (e) {
+            this.log.error('Login-Fehler: ' + e.message);
         }
 
-        for (const collector of collectors.rows) {
-            const inverterId = collector.inverterId;
-            const inverterData = await getInverterData(powerId, inverterId, token);
-            if (!inverterData || !inverterData.rows || !inverterData.rows.length) {
-                console.warn("No inverter data found for %s", collector.collectorName);
+        return null;
+    }
+
+    async getStations(userId, token) {
+        try {
+            const resp = await axios.post(`${this.BASE_URL}/dn/power/station/listApp`,
+                { userId: String(userId) },
+                { headers: { Authorization: token }, httpsAgent: this.httpsAgent });
+
+            return resp.data;
+        } catch (e) {
+            this.log.error('Fehler beim Abrufen der Stationen: ' + e.message);
+        }
+
+        return null;
+    }
+
+    async getCollectors(powerId, token) {
+        try {
+            const resp = await axios.post(`${this.BASE_URL}/dn/power/collector/listByApp`,
+                { powerId },
+                { headers: { Authorization: token }, httpsAgent: this.httpsAgent });
+
+            return resp.data;
+        } catch (e) {
+            this.log.error('Fehler beim Abrufen der Kollektoren: ' + e.message);
+        }
+
+        return null;
+    }
+
+    async getInverterData(powerId, inverterId, token) {
+        try {
+            const resp = await axios.post(`${this.BASE_URL}/dn/power/inverterData/inverterDatalist`,
+                { powerId, inverterId },
+                { headers: { Authorization: token }, httpsAgent: this.httpsAgent });
+
+            return resp.data;
+        } catch (e) {
+            this.log.error('Fehler beim Abrufen der Wechselrichterdaten: ' + e.message);
+        }
+
+        return null;
+    }
+
+    async updateData() {
+        const creds = await this.login();
+        if (!creds) return;
+
+        const stations = await this.getStations(creds.userId, creds.token);
+        if (!stations?.rows?.length) {
+            this.log.warn('Keine Stationen gefunden.');
+            return;
+        }
+
+        const station = stations.rows[this.stationIndex];
+        const powerId = station.powerId;
+
+        await this.setStateAsync(`station.${powerId}.totalPower`, { val: station.totalPowerGeneration, ack: true });
+        await this.setStateAsync(`station.${powerId}.dailyPower`, { val: station.dailyPowerGeneration, ack: true });
+
+        const collectors = await this.getCollectors(powerId, creds.token);
+        if (!collectors?.rows) {
+            this.log.warn(`Keine Collector‑Daten für Station ${station.powerName}`);
+            return;
+        }
+
+        for (const col of collectors.rows) {
+            const invData = await this.getInverterData(powerId, col.inverterId, creds.token);
+            if (!invData?.rows?.[0]) {
+                this.log.warn(`Keine Wechselrichterdaten für ${col.collectorName}`);
                 continue;
             }
 
-            const inverter = inverterData.rows[0];
-            entities.push(new AbsaarInverterSensor(`${station.powerName} Power`, powerId, inverterId, token, "acPower", "W"));
+            const inv = invData.rows[0];
+            const keys = [
+                ['acPower','W'], ['acVoltage','V'], ['acFrequency','Hz'],
+                ['pv1Power','W'], ['pv2Power','W'], ['temperature','C'],
+                ['pv1Voltage','V'], ['pv1Electric','A'], ['pv2Voltage','V'],
+                ['pv2Electric','A'], ['acElectric','A'], ['inPower','W']
+            ];
 
-            for (const [key, unit] of [
-                ["acVoltage", "V"],
-                ["acFrequency", "Hz"],
-                ["pv1Power", "W"],
-                ["pv2Power", "W"],
-                ["temperature", "C"],
-                ["pv1Voltage", "V"],
-                ["pv1Electric", "A"],
-                ["pv2Voltage", "V"],
-                ["pv2Electric", "A"],
-                ["acElectric", "A"],
-                ["inPower", "W"],
-            ]) {
-                entities.push(new AbsaarInverterSensor(`${station.powerName} ${key}`, powerId, inverterId, token, key, unit));
+            for (const [key, unit] of keys) {
+                const id = `inv.${powerId}.${col.inverterId}.${key}`;
+                await this.setObjectNotExistsAsync(id, {
+                    type: 'state',
+                    common: {
+                        name: key,
+                        type: 'number',
+                        unit: unit,
+                        role: 'value',
+                        read: true,
+                        write: false
+                    },
+                    native: {}
+                });
+                await this.setStateAsync(id, { val: inv[key] ?? 0, ack: true });
             }
         }
     }
-
-    addEntities(entities, true);
-}
-
-class AbsaarInverterSensor extends SensorEntity {
-    constructor(name, powerId, inverterId, token, sensorKey, unit) {
-        super();
-        this._powerId = powerId;
-        this._inverterId = inverterId;
-        this._token = token;
-        this._sensorKey = sensorKey;
-
-        this._attr_name = name;
-        this._attr_native_unit_of_measurement = unit;
-        this._attr_device_class = this._inferDeviceClass(unit);
-        this._attr_state_class = SensorStateClass.MEASUREMENT;
-        this._attr_extra_state_attributes = {};
-    }
-
-    _inferDeviceClass(unit) {
-        return {
-            "W": "power",
-            "V": "voltage",
-            "A": "current",
-            "°C": "temperature",
-            "Hz": "frequency"
-        }[unit];
-    }
-
-    async update() {
-        const data = await getInverterData(this._powerId, this._inverterId, this._token);
-
-        if (!data || !data.rows || !data.rows.length) {
-            console.warn("No inverter data received for ID %s", this._inverterId);
-            this._attr_native_value = "No Data";
-            return;
-        }
-
-        const inverter = data.rows[0];
-        this._attr_native_value = inverter[this._sensorKey] || 0.0;
-    }
-}
-
-class AbsaarStationSensor extends SensorEntity {
-    constructor(name, powerId, token, value, unit) {
-        super();
-        this._powerId = powerId;
-        this._token = token;
-        this._attr_name = name;
-        this._attr_native_unit_of_measurement = unit;
-        this._attr_native_value = value;
-        this._attr_device_class = unit === "kWh" ? SensorDeviceClass.ENERGY : null;
-        this._attr_state_class = unit === "kWh" ? SensorStateClass.TOTAL_INCREASING : null;
-        this._attr_extra_state_attributes = {};
-    }
-
-    async update() {
-        const data = await getStations(userId, this._token);
-
-        if (!data || !data.rows || !data.rows.length) {
-            console.warn("No station data received for ID %s", this._powerId);
-            this._attr_native_value = "No Data";
-            return;
-        }
-
-        const station = data.rows[0];
-        this._attr_native_value = station.dailyPowerGeneration || 0.0;
-    }
-}
-
-class AbsaarCloudAcess extends utils.Adapter {
-
-	/**
-	 * @param {Partial<utils.AdapterOptions>} [options={}]
-	 */
-	constructor(options) {
-		super({
-			...options,
-			name: "absaar-cloud-access",
-		});
-		this.on("ready", this.onReady.bind(this));
-		this.on("stateChange", this.onStateChange.bind(this));
-		// this.on("objectChange", this.onObjectChange.bind(this));
-		// this.on("message", this.onMessage.bind(this));
-		this.on("unload", this.onUnload.bind(this));
-	}
-	
-	/**
-	 * Is called when databases are connected and adapter received configuration.
-	 */
-	async onReady() {
-		// Initialize your adapter here
-
-		// The adapters config (in the instance object everything under the attribute "native") is accessible via
-		// this.config:
-		this.log.info("config user: " + this.config.user);
-		this.log.info("config password: " + this.config.password);
-
-		/*
-		For every state in the system there has to be also an object of type state
-		Here a simple template for a boolean variable named "testVariable"
-		Because every adapter instance uses its own unique namespace variable names can't collide with other adapters variables
-		*/
-		await this.setObjectNotExistsAsync("testVariable", {
-			type: "state",
-			common: {
-				name: "testVariable",
-				type: "boolean",
-				role: "indicator",
-				read: true,
-				write: true,
-			},
-			native: {},
-		});
-
-		// In order to get state updates, you need to subscribe to them. The following line adds a subscription for our variable we have created above.
-		this.subscribeStates("testVariable");
-		// You can also add a subscription for multiple states. The following line watches all states starting with "lights."
-		// this.subscribeStates("lights.*");
-		// Or, if you really must, you can also watch all states. Don't do this if you don't need to. Otherwise this will cause a lot of unnecessary load on the system:
-		// this.subscribeStates("*");
-
-		/*
-			setState examples
-			you will notice that each setState will cause the stateChange event to fire (because of above subscribeStates cmd)
-		*/
-		// the variable testVariable is set to true as command (ack=false)
-		await this.setStateAsync("testVariable", true);
-
-		// same thing, but the value is flagged "ack"
-		// ack should be always set to true if the value is received from or acknowledged from the target system
-		await this.setStateAsync("testVariable", { val: true, ack: true });
-
-		// same thing, but the state is deleted after 30s (getState will return null afterwards)
-		await this.setStateAsync("testVariable", { val: true, ack: true, expire: 30 });
-
-		// examples for the checkPassword/checkGroup functions
-		let result = await this.checkPasswordAsync("admin", "iobroker");
-		this.log.info("check user admin pw iobroker: " + result);
-
-		result = await this.checkGroupAsync("admin", "admin");
-		this.log.info("check group user admin group admin: " + result);
-	}
-
-	/**
-	 * Is called when adapter shuts down - callback has to be called under any circumstances!
-	 * @param {() => void} callback
-	 */
-	onUnload(callback) {
-		try {
-			// Here you must clear all timeouts or intervals that may still be active
-			// clearTimeout(timeout1);
-			// clearTimeout(timeout2);
-			// ...
-			// clearInterval(interval1);
-
-			callback();
-		} catch (e) {
-			callback();
-		}
-	}
-
-	// If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-	// You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-	// /**
-	//  * Is called if a subscribed object changes
-	//  * @param {string} id
-	//  * @param {ioBroker.Object | null | undefined} obj
-	//  */
-	// onObjectChange(id, obj) {
-	// 	if (obj) {
-	// 		// The object was changed
-	// 		this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-	// 	} else {
-	// 		// The object was deleted
-	// 		this.log.info(`object ${id} deleted`);
-	// 	}
-	// }
-
-	/**
-	 * Is called if a subscribed state changes
-	 * @param {string} id
-	 * @param {ioBroker.State | null | undefined} state
-	 */
-	onStateChange(id, state) {
-		if (state) {
-			// The state was changed
-			this.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-		} else {
-			// The state was deleted
-			this.log.info(`state ${id} deleted`);
-		}
-	}
-
-	// If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-	// /**
-	//  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-	//  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-	//  * @param {ioBroker.Message} obj
-	//  */
-	// onMessage(obj) {
-	// 	if (typeof obj === "object" && obj.message) {
-	// 		if (obj.command === "send") {
-	// 			// e.g. send email or pushover or whatever
-	// 			this.log.info("send command");
-
-	// 			// Send response in callback if required
-	// 			if (obj.callback) this.sendTo(obj.from, obj.command, "Message received", obj.callback);
-	// 		}
-	// 	}
-	// }
-
 }
 
 if (require.main !== module) {
-	// Export the constructor in compact mode
-	/**
-	 * @param {Partial<utils.AdapterOptions>} [options={}]
-	 */
-	module.exports = (options) => new AbsaarCloudAcess(options);
+    module.exports = (options) => new MiniEMS(options);
 } else {
-	// otherwise start the instance directly
-	new AbsaarCloudAcess();
+    new MiniEMS();
 }
