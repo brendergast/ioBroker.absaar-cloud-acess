@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Mini-EMS Adapter Settings</title>
+    <link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+</head>
+<body>
+    <div class="m adapter-container">
+        <h3>Mini-EMS Adapter Einstellungen</h3>
+        <div class="row">
+            <div class="col s6 input-field">
+                <input id="username" type="text"/>
+                <label for="username" class="translate">Benutzername (E-Mail)</label>
+            </div>
+            <div class="col s6 input-field">
+                <input id="password" type="password"/>
+                <label for="password" class="translate">Passwort</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col s6 input-field">
+                <input id="stationIndex" type="number" min="0"/>
+                <label for="stationIndex" class="translate">Stations-Index (0-basiert)</label>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Load existing settings
+        function load(settings, onChange) {
+            if (!settings) return;
+            $('#username').val(settings.username).on('change', () => onChange());
+            $('#password').val(settings.password).on('change', () => onChange());
+            $('#stationIndex').val(settings.stationIndex).on('change', () => onChange());
+            onChange(false);
+        }
+
+        // Save settings
+        function save(callback) {
+            callback({
+                username: $('#username').val(),
+                password: $('#password').val(),
+                stationIndex: parseInt($('#stationIndex').val()) || 0
+            });
+        }
+    </script>
+</body>
+</html>

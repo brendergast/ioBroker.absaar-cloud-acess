@@ -1,12 +1,39 @@
 {
   "common": {
     "name": "mini-ems",
-    "title": "Mini EMS Adapter",
-    "version": "1.0.0",
-    "desc": "Adapter zur Abfrage von Mini EMS PV‑Daten",
+    "version": "0.0.1",
+    "news": {
+      "0.0.1": {
+        "en": "initial release",
+        "de": "Erste Version"
+      }
+    },
+    "title": "Mini-EMS",
+    "titleLang": {
+      "en": "Mini-EMS",
+      "de": "Mini-EMS"
+    },
+    "desc": {
+      "en": "Adapter for Mini-EMS PV system data",
+      "de": "Adapter für Mini-EMS PV-Anlagendaten"
+    },
+    "authors": [
+      "Dein Name <you@example.com>"
+    ],
+    "license": "MIT",
     "platform": "Javascript/Node.js",
+    "main": "main.js",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/yourgithub/mini-ems/main/admin/mini-ems.png",
+    "readme": "https://github.com/yourgithub/mini-ems/blob/main/README.md",
+    "loglevel": "info",
     "mode": "daemon",
-    "connectionType": "cloud"
+    "type": "energy",
+    "compact": true,
+    "materialize": true,
+    "adminUI": {
+      "config": "materialize"
+    }
   },
   "native": {
     "username": "",
@@ -14,6 +41,5 @@
     "stationIndex": 0
   },
   "objects": [],
-  "instanceObjects": [],
-  "loglevel": "info"
+  "instanceObjects": []
 }
