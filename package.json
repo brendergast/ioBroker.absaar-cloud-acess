@@ -1,6 +1,7 @@
 {
   "name": "iobroker.mini-ems",
   "version": "0.0.1",
+  "type":"module",
   "description": "Adapter for Mini-EMS PV system data",
   "author": "Dein Name <you@example.com>",
   "license": "MIT",
